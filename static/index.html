@@ -1,12 +1,66 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Chat Colaborativo</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Colaborativo</title>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    #chat {
+      border: 1px solid #ddd;
+      padding: 1rem;
+      height: 400px;
+      overflow-y: auto;
+      background: #fafafa;
+      border-radius: 6px;
+    }
+    #controls {
+      margin-top: 1rem;
+      display: flex;
+      gap: .5rem;
+    }
+    #msg { flex: 1; padding: .5rem; }
+    .meta { color: #666; font-size: .9rem; margin-bottom: .5rem; }
+    #btnLogin { background: #4285F4; color: white; padding: .5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
+    #btnLogin:hover { background: #3367D6; }
+    select { padding: .5rem; border-radius: 4px; }
+    #topBar { display:flex; gap:1rem; align-items:center; margin-bottom:1rem; }
+  </style>
 </head>
+
 <body>
-    <h1>Bienvenido al Chat</h1>
-    <p>Interfaz mínima. Aquí irá el cliente WebSocket.</p>
-    <script src="client.js"></script>
+
+  <h1>Chat Colaborativo</h1>
+
+  <!-- TOP: siempre visible (login / status) -->
+  <div id="topBar">
+    <div id="status" class="meta">Cargando sesión...</div>
+    <button id="btnLogin">Login con Google</button>
+    <button id="btnLogout" style="display:none;">Cerrar sesión</button>
+    <select id="roomSelect" style="margin-left:auto;">
+      <option value="default">General</option>
+    </select>
+  </div>
+
+  <!-- Loading (temporal) -->
+  <div id="loading" class="meta">Comprobando sesión...</div>
+
+  <!-- Panel principal (se oculta si no hay sesión) -->
+  <div id="chatPanel" style="display:none;">
+    <div id="chat"></div>
+
+    <div id="controls">
+      <input id="msg" placeholder="Escribe un mensaje..." autocomplete="off">
+      <button id="send">Enviar</button>
+    </div>
+  </div>
+
+  <script src="/static/client.js"></script>
 </body>
 </html>

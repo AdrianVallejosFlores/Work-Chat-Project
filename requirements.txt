@@ -1,4 +1,5 @@
-websockets
-requests
-google-auth
-google-auth-oauthlib
+websockets>=11.0
+requests>=2.31
+google-auth>=2.22
+google-auth-oauthlib>=1.1
+python-dotenv>=1.0
