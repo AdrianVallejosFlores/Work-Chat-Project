@@ -37,7 +37,10 @@
         session = null; user = null; return false;
       }
       const j = await r.json();
-      session = j.session_id; user = j.user; return true;
+      session = j.session_id; 
+      user = j.user; 
+      return true;
+      
     } catch (e) {
       console.error("fetchSession", e);
       return false;
@@ -76,8 +79,17 @@
   function connectWS() {
     const proto = location.protocol === "https:" ? "wss" : "ws";
     // Usa hostname + puerto WS (8765)
-    const wsUrl = `${proto}://${location.hostname}:8765/?session=${encodeURIComponent(session)}&room=${encodeURIComponent(room)}`;
+    const wsUrl = `${proto}://${location.hostname}:8765/?session_id=${encodeURIComponent(session)}&room=${encodeURIComponent(room)}`;
 
+
+        // ---- LOGS EXTRA PARA DEPURAR ----
+    console.log("====================================");
+    console.log("WS URL generada:", wsUrl);
+    console.log("Session ID usado:", session);
+    console.log("Room actual:", room);
+    console.log("Usuario detectado en cliente:", user);
+    console.log("====================================");
+    
     logLine("Conectando a " + wsUrl);
     try {
       ws = new WebSocket(wsUrl);

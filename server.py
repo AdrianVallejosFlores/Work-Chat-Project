@@ -78,7 +78,8 @@ def create_session(userinfo: dict) -> str:
         "user": {
             "sub": userinfo.get("sub"),
             "email": userinfo.get("email"),
-            "name": userinfo.get("name") or (userinfo.get("email") or "").split("@")[0]
+            "name": userinfo.get("name") or (userinfo.get("email") or "").split("@")[0],
+            "display_name": userinfo.get("display_name") or None
         },
         "created_at": time.time()
     }
@@ -243,7 +244,7 @@ def run_http_server():
     server.serve_forever()
 
 ROOMS: Dict[str, Set] = {}
-WS_USERS: Dict[websockets.WebSocketServerProtocol, Dict[str, Any]] = {}
+WS_USERS: Dict[object, Dict[str, Any]] = {}
 
 async def notify_room(room: str, message: dict):
     conns = set(ROOMS.get(room, set()))
@@ -260,9 +261,12 @@ async def notify_room(room: str, message: dict):
         ROOMS.get(room, set()).discard(conn)
         WS_USERS.pop(conn, None)
 
-async def register(ws, user, room: str):
+async def register(ws, user, room: str, session_id: str):
+    # Asegurarse que session_id sea str o None
+    session_id = None if session_id is None else str(session_id)
+    print(f"[WS] register() -> session_id (repr): {repr(session_id)}, type: {type(session_id)}")
     ROOMS.setdefault(room, set()).add(ws)
-    WS_USERS[ws] = {"user": user, "room": room}
+    WS_USERS[ws] = {"user": user, "room": room, "session_id": session_id}
     await notify_room(room, {"type": "join", "user": user, "ts": time.time()})
 
 async def unregister(ws):
@@ -275,57 +279,72 @@ async def unregister(ws):
     WS_USERS.pop(ws, None)
     await notify_room(room, {"type": "leave", "user": user, "ts": time.time()})
 
-async def ws_handler(websocket, path=None):
-    if path is None:
-        try:
-            path = websocket.path
-        except AttributeError:
-            path = "/"
-    qs = urlparse(path).query
-    params = parse_qs(qs)
-    room = params.get("room", ["default"])[0]
-    session_id = params.get("session", [None])[0]
+async def ws_handler(conn):
+    raw = getattr(conn.request, "path", None)
+    if raw is None:
+        raw = "/"  
+
+    parsed = urlparse(raw)
+    query_params = parse_qs(parsed.query)
+
+    room = query_params.get("room", ["default"])[0]
+    session_id = query_params.get("session_id", [None])[0]
+
+    # Buscar usuario por session_id
     user = None
     if session_id:
         sess = load_json(SESSIONS_FILE).get(session_id)
         if sess:
-            user = sess.get("user")
-            if user:
-                display = user.get("display_name") or user.get("name")
-                user = { "name": display, "email": user.get("email") }
+            u = sess["user"]
+            user = {
+                "name": u.get("display_name") or u.get("name"),
+                "email": u.get("email")
+            }
+
     if not user:
         user = {"name": f"Usuario_{secrets.token_hex(3)}", "email": None}
-    await register(websocket, user, room)
+
+    await register(conn, user, room, session_id)
+
     lines = read_last_lines(room, n=100)
     try:
-        await websocket.send(json.dumps({"type": "history", "lines": lines}, ensure_ascii=False))
-    except Exception:
+        await conn.send(json.dumps({"type": "history", "lines": lines}, ensure_ascii=False))
+    except:
         pass
+
     try:
-        async for raw in websocket:
-            try:
-                obj = json.loads(raw)
-            except:
-                continue
+        async for raw in conn:
+            obj = json.loads(raw)
             text = obj.get("text")
             if not text:
                 continue
+
             ts = time.time()
-            user_info = WS_USERS.get(websocket, {}).get("user", {"name": "Anon"})
-            line = f"[{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts))}] {user_info.get('name')}: {text}"
+            sess = load_json(SESSIONS_FILE).get(session_id)
+            if sess:
+                u = sess["user"]
+                user_info = {
+                    "name": u.get("display_name") or u.get("name"),
+                    "email": u.get("email")
+                }
+            else:
+                user_info = {"name": "Anon", "email": None}
+
+            line = f"[{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts))}] {user_info['name']}: {text}"
             append_message_log(room, line)
+
             await notify_room(room, {
                 "type": "message",
                 "user": user_info,
                 "text": text,
                 "ts": ts
             })
-    except (ConnectionClosedOK, ConnectionClosedError):
-        pass
+
     except Exception:
         pass
+
     finally:
-        await unregister(websocket)
+        await unregister(conn)
 
 async def run_ws_server():
     print(f"[WS] Starting WebSocket server on port {WS_PORT}")
