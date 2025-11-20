@@ -17,18 +17,21 @@ El servidor maneja:
 
 ## 🗂 Estructura del Proyecto
 
-chat/
-├── server.py # Servidor HTTP + WebSocket + login Google
-├── oauth.py # Módulo OAuth (Google)
-├── data/
-│ ├── users.json
-│ ├── rooms.json
-│ ├── sessions.json
-│ └── messages/
-│ └── general.log
-└── static/
-├── index.html
-└── client.js
+Work-Chat-Project/
+├── server.py           # Servidor principal: HTTP + WebSocket + manejo de sesiones
+├── oauth.py            # Módulo de autenticación Google OAuth2
+├── requirements.txt    # Dependencias del proyecto
+├── README.md           # Documentación del proyecto
+├── .env                # Variables de entorno
+├── data/               # Carpeta de persistencia interna
+│   ├── users.json      # Usuarios autenticados
+│   ├── rooms.json      # Salas registradas
+│   ├── sessions.json   # Sesiones activas
+│   └── messages/       # Logs de mensajes por sala
+│       ├── default.log # Historial de sala 'default'
+└── static/             # Archivos del cliente web (SPA)
+    ├── index.html      # Interfaz principal del chat
+    └── client.js       # Lógica del cliente y conexión WebSocket
 
 ---
 
