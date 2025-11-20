@@ -2,7 +2,7 @@
 Este proyecto corresponde a un sistema de chat colaborativo que permite a los usuarios y miembros del equipo comunicarse mediante salas de chat públicas y privadas. Incluye autenticación mediante Google e integra un servicio WebSocket para garantizar el envío de mensajes en tiempo real.
 
 
-# Chat Colaborativo en Tiempo Real (Solo Python)
+# Chat Colaborativo en Tiempo Real con Python
 
 Este proyecto implementa un chat colaborativo en tiempo real usando únicamente **Python**, sin backend separado ni frameworks de frontend.
 
@@ -29,7 +29,6 @@ Work-Chat-Project
 │   ├── rooms.json     → Salas registradas
 │   ├── sessions.json  → Sesiones activas
 │   └── messages/
-│       ├── default.log
 │       └── general.log
 └── static/
     ├── index.html     → Interfaz SPA del chat

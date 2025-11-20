@@ -1,13 +1,20 @@
-// static/client.js
 (async function () {
+  // Espera a que modals.js valide la autenticación y nombre
+  let waited = 0;
+  while (typeof window.__AUTH_READY__ === "undefined" && waited < 6000) {
+    await new Promise(r => setTimeout(r, 100));
+    waited += 100;
+  }
+  // Si no se definió después de 6s, lo asumimos true para evitar bloqueo en pruebas
+  if (typeof window.__AUTH_READY__ === "undefined") window.__AUTH_READY__ = true;
+
+  // ---------- resto del cliente ----------
   const status = document.getElementById("status");
-  const btnLogin = document.getElementById("btnLogin");
   const btnLogout = document.getElementById("btnLogout");
   const chat = document.getElementById("chat");
   const msgInput = document.getElementById("msg");
   const sendBtn = document.getElementById("send");
   const roomSelect = document.getElementById("roomSelect");
-
   const loading = document.getElementById("loading");
   const chatPanel = document.getElementById("chatPanel");
 
@@ -23,120 +30,74 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  // ---------- Session handling ----------
   async function fetchSession() {
     try {
       const r = await fetch("/session", { cache: "no-store" });
       if (r.status === 401) {
-        // no session
-        session = null;
-        user = null;
-        return false;
+        session = null; user = null; return false;
       }
-      if (!r.ok) throw new Error("error fetching session");
       const j = await r.json();
-      session = j.session_id;
-      user = j.user;
-      return true;
+      session = j.session_id; user = j.user; return true;
     } catch (e) {
-      console.error("fetchSession error:", e);
-      session = null;
-      user = null;
+      console.error("fetchSession", e);
       return false;
     }
   }
 
-  btnLogin.onclick = () => {
-    window.location.href = "/login";
-  };
-
   btnLogout.onclick = async () => {
-    // close ws before logout
-    if (ws) {
-      try { ws.close(); } catch {}
-      ws = null;
-    }
+    if (ws) try { ws.close(); } catch {}
     await fetch("/logout");
-    // reload page to show login UI
     window.location.reload();
   };
 
-  // Rooms dropdown basic
   roomSelect.innerHTML = `<option value="default">General</option>`;
   roomSelect.value = room;
   roomSelect.onchange = () => {
     room = roomSelect.value;
-    if (ws) {
-      try { ws.close(); } catch {}
-      ws = null;
-    }
-    // reconnect with new room (only if logged)
+    chat.innerHTML = "";
+    if (ws) try { ws.close(); } catch {}
     if (session) connectWS();
   };
 
-  // Hide chat UI until we know session
   loading.style.display = "";
-  chatPanel.style.display = "none";
-
-  const hasSession = await fetchSession();
-
-  // hide loading after check
-  loading.style.display = "none";
-
-  if (!hasSession) {
-    // show login UI (status + login button are always visible in the HTML)
-    status.textContent = "No autenticado";
-    btnLogin.style.display = "inline-block";
-    btnLogout.style.display = "none";
-    return; // do not open WS
-  }
-
-  // If we reached here, we have session+user
-  status.textContent = `Conectado como ${user.name} (${user.email || "sin email"})`;
-  btnLogin.style.display = "none";
-  btnLogout.style.display = "inline-block";
   chatPanel.style.display = "block";
 
-  // ---------- WebSocket ----------
+  const ok = await fetchSession();
+  loading.style.display = "none";
+  if (!ok) {
+    status.textContent = "No autenticado";
+    btnLogout.style.display = "none";
+    return;
+  }
+
+  status.textContent = `Conectado como ${user.display_name || user.name || user.email || "usuario"}`;
+  btnLogout.style.display = "inline-block";
+
   function connectWS() {
-    // build ws url. If you deploy to same origin but different port, adjust accordingly.
     const proto = location.protocol === "https:" ? "wss" : "ws";
-    // Use location.hostname so it works on deployed host; port is WS port (default 8765)
-    const wsUrl = `${proto}://${location.hostname}:8765/?session=${encodeURIComponent(session || "")}&room=${encodeURIComponent(room)}`;
+    // Usa hostname + puerto WS (8765)
+    const wsUrl = `${proto}://${location.hostname}:8765/?session=${encodeURIComponent(session)}&room=${encodeURIComponent(room)}`;
 
     logLine("Conectando a " + wsUrl);
     try {
       ws = new WebSocket(wsUrl);
     } catch (e) {
       logLine("Error creando WebSocket: " + e);
-      ws = null;
       return;
     }
-
     ws.onopen = () => logLine("Conexión establecida.");
     ws.onclose = () => logLine("Conexión cerrada.");
-    ws.onerror = (err) => {
-      console.error("WS error", err);
-      logLine("Error WebSocket.");
-    };
+    ws.onerror = (e) => { console.error("ws err", e); logLine("Error websocket"); };
 
-    ws.onmessage = (ev) => {
+    ws.onmessage = ev => {
       try {
         const obj = JSON.parse(ev.data);
-        if (obj.type === "history") {
-          obj.lines.forEach(l => logLine(l));
-        } else if (obj.type === "join") {
-          logLine(`--> ${obj.user.name} se ha unido`);
-        } else if (obj.type === "leave") {
-          logLine(`--> ${obj.user.name} se ha ido`);
-        } else if (obj.type === "message") {
-          logLine(`[${new Date(obj.ts * 1000).toLocaleTimeString()}] ${obj.user.name}: ${obj.text}`);
-        } else {
-          // otros eventos
-          console.log("evento ws:", obj);
-        }
+        if (obj.type === "history") obj.lines.forEach(logLine);
+        else if (obj.type === "join") logLine(`--> ${obj.user.name} se ha unido`);
+        else if (obj.type === "leave") logLine(`--> ${obj.user.name} se ha ido`);
+        else if (obj.type === "message") logLine(`[${new Date(obj.ts*1000).toLocaleTimeString()}] ${obj.user.name}: ${obj.text}`);
       } catch (e) {
-        console.error("Error parsing WS message", e);
+        console.error("parse msg", e);
       }
     };
   }
@@ -144,16 +105,10 @@
   sendBtn.onclick = () => {
     const text = msgInput.value.trim();
     if (!text) return;
-
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      logLine("WebSocket no conectado.");
-      return;
-    }
-
+    if (!ws || ws.readyState !== WebSocket.OPEN) { logLine("WebSocket no conectado."); return; }
     ws.send(JSON.stringify({ text }));
     msgInput.value = "";
   };
 
-  // start ws
   connectWS();
 })();

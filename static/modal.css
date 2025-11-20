@@ -1,0 +1,77 @@
+/* Backdrop (oscurece y desenfoca el fondo) */
+#backdrop {
+  position: fixed;
+  inset: 0;
+  backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.65);
+  z-index: 1000;
+  display: none;
+}
+
+/* Caja modal centrada */
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 1.25rem;
+  width: 360px;
+  max-width: 92%;
+  background: linear-gradient(180deg, #0b0b0b, #111);
+  color: #eef;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  z-index: 1001;
+  display: none;
+}
+
+.modal h2 {
+  margin: 0 0 .5rem 0;
+  font-size: 1.25rem;
+  color: #fff;
+}
+
+.modal p {
+  margin: 0 0 1rem 0;
+  color: #cfcfcf;
+}
+
+.modal input {
+  width: 100%;
+  padding: .6rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #060606;
+  color: #fff;
+  margin-bottom: .5rem;
+}
+
+.modal button {
+  width: 100%;
+  padding: .6rem;
+  margin-top: .45rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: #4a9eff;
+  color: #032;
+}
+
+.btn-primary:hover {
+  background: #1e7cff;
+}
+
+.btn-secondary {
+  background: #222;
+  color: #fff;
+  border: 1px solid #444;
+}
+
+.btn-secondary:hover {
+  background: #333;
+}

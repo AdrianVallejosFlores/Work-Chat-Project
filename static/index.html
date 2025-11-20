@@ -5,54 +5,58 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chat Colaborativo</title>
 
+  <!-- styles modales primero -->
+  <link rel="stylesheet" href="/static/modal.css"> <!-- FIX AQUÍ -->
+
   <style>
     body {
       font-family: system-ui, sans-serif;
       max-width: 900px;
       margin: 2rem auto;
       padding: 0 1rem;
+      background: #0d0d0d;
+      color: #e8e8e8;
     }
+    h1 { text-align:center; color:#fff; text-shadow:0 0 10px #0099ff; }
+
+    #chatPanel { transition: opacity 0.25s ease; }
+    #chatPanel.blurred { opacity: 0.12; pointer-events: none; }
+
     #chat {
-      border: 1px solid #ddd;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 8px;
       padding: 1rem;
-      height: 400px;
+      height: 420px;
       overflow-y: auto;
-      background: #fafafa;
-      border-radius: 6px;
+      box-shadow: 0 0 10px rgba(0,153,255,0.15);
     }
-    #controls {
-      margin-top: 1rem;
-      display: flex;
-      gap: .5rem;
-    }
-    #msg { flex: 1; padding: .5rem; }
-    .meta { color: #666; font-size: .9rem; margin-bottom: .5rem; }
-    #btnLogin { background: #4285F4; color: white; padding: .5rem 1rem; border: none; border-radius: 4px; cursor: pointer; }
-    #btnLogin:hover { background: #3367D6; }
-    select { padding: .5rem; border-radius: 4px; }
-    #topBar { display:flex; gap:1rem; align-items:center; margin-bottom:1rem; }
+    #controls { margin-top: 1rem; display:flex; gap:.5rem; }
+    #msg { flex:1; padding:.7rem; border-radius:6px; border:1px solid #333; background:#1a1a1a; color:#eee; }
+    #send { padding:.7rem 1.2rem; border-radius:6px; border:none; cursor:pointer; background:linear-gradient(135deg,#0066ff,#00ccff); color:#fff; font-weight:600; }
+    #topBar{ display:flex; gap:1rem; align-items:center; margin-bottom:1rem; }
+
+    
+    #btnLogout { background:#ff4444; color:#fff; padding:.5rem 1rem; border-radius:6px; border:none; cursor:pointer; display:none; }
+
+    .meta { color:#aaa; font-size:.9rem; }
   </style>
 </head>
-
 <body>
 
   <h1>Chat Colaborativo</h1>
 
-  <!-- TOP: siempre visible (login / status) -->
   <div id="topBar">
     <div id="status" class="meta">Cargando sesión...</div>
-    <button id="btnLogin">Login con Google</button>
-    <button id="btnLogout" style="display:none;">Cerrar sesión</button>
+    <button id="btnLogout">Cerrar sesión</button>
     <select id="roomSelect" style="margin-left:auto;">
       <option value="default">General</option>
     </select>
   </div>
 
-  <!-- Loading (temporal) -->
   <div id="loading" class="meta">Comprobando sesión...</div>
 
-  <!-- Panel principal (se oculta si no hay sesión) -->
-  <div id="chatPanel" style="display:none;">
+  <div id="chatPanel">
     <div id="chat"></div>
 
     <div id="controls">
@@ -61,6 +65,24 @@
     </div>
   </div>
 
+  <div id="backdrop"></div>
+
+  <div id="modalLogin" class="modal" aria-hidden="true" role="dialog">
+    <h2>Bienvenido</h2>
+    <p>Necesitas iniciar sesión con Google para continuar.</p>
+    <button id="btnLoginModal" class="btn-primary">Iniciar con Google</button>
+  </div>
+
+  <div id="modalUsername" class="modal" aria-hidden="true" role="dialog">
+    <h2>Elige tu nombre de usuario</h2>
+    <input id="usernameInput" placeholder="Escribe tu nombre...">
+    <button id="btnUseInput" class="btn-primary">Usar este nombre</button>
+    <button id="btnUseEmail" class="btn-secondary">Usar nombre del correo</button>
+    <button id="btnUseDefault" class="btn-secondary">Usar nombre por defecto</button>
+  </div>
+
+  <script src="/static/modals.js"></script>
   <script src="/static/client.js"></script>
+
 </body>
 </html>
