@@ -5,21 +5,35 @@ body {
       padding: 0 1rem;
       background: #0d0d0d;
       color: #e8e8e8;
+      padding-bottom: 110px;
     }
     h1 { text-align:center; color:#fff; text-shadow:0 0 10px #0099ff; }
 
     #chatPanel { transition: opacity 0.25s ease; }
     #chatPanel.blurred { opacity: 0.12; pointer-events: none; }
 
-    #chat {
-      background: #111;
-      border: 1px solid #222;
-      border-radius: 8px;
-      padding: 1rem;
-      height: 420px;
-      overflow-y: auto;
-      box-shadow: 0 0 10px rgba(0,153,255,0.15);
-    }
+/* style.css */
+#chat {
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 1rem;
+    
+    /* 💥 Solución 2: Cambia la altura fija a dinámica (¡ESTO ES CLAVE!) */
+    /*
+       Usamos min-height para que siempre tenga un tamaño mínimo,
+       y eliminamos height: 420px;
+    */
+    min-height: 200px;
+    
+    /* Hace que el chat ocupe todo el espacio restante en el panel.
+       Tu HTML tiene #chat dentro de #chatPanel, el cual probablemente
+       es un flex container, así que esto es la mejor práctica. */
+    flex-grow: 1; 
+
+    overflow-y: auto;
+    box-shadow: 0 0 10px rgba(0,153,255,0.15);
+}
     #controls { margin-top: 1rem; display:flex; gap:.5rem; }
     #msg { flex:1; padding:.7rem; border-radius:6px; border:1px solid #333; background:#1a1a1a; color:#eee; }
     #send { padding:.7rem 1.2rem; border-radius:6px; border:none; cursor:pointer; background:linear-gradient(135deg,#0066ff,#00ccff); color:#fff; font-weight:600; }
@@ -121,3 +135,30 @@ body {
 
 .day-separator::before { left: 0; }
 .day-separator::after  { right: 0; }
+
+
+/* --- ESTILO FOOTER --- */
+.simple-footer {
+    position: fixed; /* Lo hace fijo */
+    bottom: 0;       /* Lo ancla al fondo */
+    left: 0;
+    width: 100%;
+    
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0; 
+    z-index: 1000;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 0 1rem;
+    font-size: 0.9rem;
+}
+
+.footer-content p {
+    margin: 0;
+}
