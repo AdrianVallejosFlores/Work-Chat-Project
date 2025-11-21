@@ -306,45 +306,62 @@ async def ws_handler(conn):
 
     await register(conn, user, room, session_id)
 
-    lines = read_last_lines(room, n=100)
+    raw_lines = read_last_lines(room, n=100)
+history = []
+for ln in raw_lines:
     try:
-        await conn.send(json.dumps({"type": "history", "lines": lines}, ensure_ascii=False))
+        history.append(json.loads(ln))
     except:
         pass
 
-    try:
-        async for raw in conn:
-            obj = json.loads(raw)
-            text = obj.get("text")
-            if not text:
-                continue
+        await conn.send(json.dumps({
+    "type": "history",
+    "messages": history
+}, ensure_ascii=False))
 
-            ts = time.time()
-            sess = load_json(SESSIONS_FILE).get(session_id)
-            if sess:
-                u = sess["user"]
-                user_info = {
-                    "name": u.get("display_name") or u.get("name"),
-                    "email": u.get("email")
-                }
-            else:
-                user_info = {"name": "Anon", "email": None}
 
-            line = f"[{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts))}] {user_info['name']}: {text}"
-            append_message_log(room, line)
-
-            await notify_room(room, {
-                "type": "message",
-                "user": user_info,
-                "text": text,
-                "ts": ts
-            })
-
-    except Exception:
         pass
 
-    finally:
-        await unregister(conn)
+  try:
+    async for raw in conn:
+        obj = json.loads(raw)
+        text = obj.get("text")
+        if not text:
+            continue
+
+        ts = time.time()
+        sess = load_json(SESSIONS_FILE).get(session_id)
+        if sess:
+            u = sess["user"]
+            user_info = {
+                "name": u.get("display_name") or u.get("name"),
+                "email": u.get("email")
+            }
+        else:
+            user_info = {"name": "Anon", "email": None}
+
+        # Guardar en historial como JSON
+        record = {
+            "ts": ts,
+            "user": user_info,
+            "text": text
+        }
+        append_message_log(room, json.dumps(record, ensure_ascii=False))
+
+        # Enviar mensaje a todos
+        await notify_room(room, {
+            "type": "message",
+            "user": user_info,
+            "text": text,
+            "ts": ts
+        })
+
+except Exception:
+    pass
+
+finally:
+    await unregister(conn)
+
 
 async def run_ws_server():
     print(f"[WS] Starting WebSocket server on port {WS_PORT}")
