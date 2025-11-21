@@ -19,16 +19,7 @@ body {
     border-radius: 8px;
     padding: 1rem;
     
-    /* 💥 Solución 2: Cambia la altura fija a dinámica (¡ESTO ES CLAVE!) */
-    /*
-       Usamos min-height para que siempre tenga un tamaño mínimo,
-       y eliminamos height: 420px;
-    */
     min-height: 200px;
-    
-    /* Hace que el chat ocupe todo el espacio restante en el panel.
-       Tu HTML tiene #chat dentro de #chatPanel, el cual probablemente
-       es un flex container, así que esto es la mejor práctica. */
     flex-grow: 1; 
 
     overflow-y: auto;
