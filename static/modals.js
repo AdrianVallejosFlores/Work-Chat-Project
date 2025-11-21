@@ -64,7 +64,7 @@
     statusEl.textContent = `Conectado como ${user.email || user.name || "usuario"}`;
 
     btnUseInput.onclick = () => sendName(usernameInput.value.trim());
-    btnUseEmail.onclick = () => sendName((user.email || "").split("@")[0]);
+    btnUseEmail.onclick = () => sendName(user.name);
     btnUseDefault.onclick = () => sendName(null);
 
     return;

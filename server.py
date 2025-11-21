@@ -74,18 +74,20 @@ def read_last_lines(room: str, n: int = 50):
 def create_session(userinfo: dict) -> str:
     sessions = load_json(SESSIONS_FILE)
     session_id = secrets.token_urlsafe(16)
+    user_record = {
+        "sub": userinfo.get("sub"),
+        "email": userinfo.get("email"),
+        "name": userinfo.get("name") or (userinfo.get("email") or "").split("@")[0],
+        "display_name": userinfo.get("display_name") or None
+    }
     sessions[session_id] = {
-        "user": {
-            "sub": userinfo.get("sub"),
-            "email": userinfo.get("email"),
-            "name": userinfo.get("name") or (userinfo.get("email") or "").split("@")[0],
-            "display_name": userinfo.get("display_name") or None
-        },
+        "user": user_record,
         "created_at": time.time()
     }
     save_json(SESSIONS_FILE, sessions)
     users = load_json(USERS_FILE)
-    users[str(userinfo.get("sub"))] = sessions[session_id]["user"]
+    users_key = str(userinfo.get("sub")) if userinfo.get("sub") is not None else user_record["email"] or user_record["name"]
+    users[users_key] = user_record
     save_json(USERS_FILE, users)
     return session_id
 
@@ -239,12 +241,13 @@ class Handler(SimpleHTTPRequestHandler):
         return
 
 def run_http_server():
-    server = HTTPServer(("0.0.0.0", HTTP_PORT), Handler)
-    print(f"[HTTP] Serving HTTP on port {HTTP_PORT} (visit http://localhost:{HTTP_PORT})")
+    server = HTTPServer((HOST, HTTP_PORT), Handler)
+    print(f"[HTTP] Serving HTTP on {HOST}:{HTTP_PORT} (visit http://localhost:{HTTP_PORT})")
     server.serve_forever()
 
-ROOMS: Dict[str, Set] = {}
-WS_USERS: Dict[object, Dict[str, Any]] = {}
+# --- WebSocket server state ---
+ROOMS: Dict[str, Set] = {}   # mapping room -> set of websocket connections
+WS_USERS: Dict[object, Dict[str, Any]] = {}  # mapping websocket -> info dict
 
 async def notify_room(room: str, message: dict):
     conns = set(ROOMS.get(room, set()))
@@ -255,6 +258,8 @@ async def notify_room(room: str, message: dict):
     for conn in conns:
         try:
             await conn.send(data)
+        except (ConnectionClosedOK, ConnectionClosedError, RuntimeError):
+            to_remove.append(conn)
         except Exception:
             to_remove.append(conn)
     for conn in to_remove:
@@ -262,7 +267,6 @@ async def notify_room(room: str, message: dict):
         WS_USERS.pop(conn, None)
 
 async def register(ws, user, room: str, session_id: str):
-    # Asegurarse que session_id sea str o None
     session_id = None if session_id is None else str(session_id)
     print(f"[WS] register() -> session_id (repr): {repr(session_id)}, type: {type(session_id)}")
     ROOMS.setdefault(room, set()).add(ws)
@@ -273,8 +277,8 @@ async def unregister(ws):
     info = WS_USERS.get(ws)
     if not info:
         return
-    room = info["room"]
-    user = info["user"]
+    room = info.get("room")
+    user = info.get("user")
     ROOMS.get(room, set()).discard(ws)
     WS_USERS.pop(ws, None)
     await notify_room(room, {"type": "leave", "user": user, "ts": time.time()})
@@ -282,91 +286,114 @@ async def unregister(ws):
 async def ws_handler(conn):
     raw = getattr(conn.request, "path", None)
     if raw is None:
-        raw = "/"  
+        raw = "/"   
 
-    parsed = urlparse(raw)
-    query_params = parse_qs(parsed.query)
-
-    room = query_params.get("room", ["default"])[0]
-    session_id = query_params.get("session_id", [None])[0]
-
-    # Buscar usuario por session_id
-    user = None
-    if session_id:
-        sess = load_json(SESSIONS_FILE).get(session_id)
-        if sess:
-            u = sess["user"]
-            user = {
-                "name": u.get("display_name") or u.get("name"),
-                "email": u.get("email")
-            }
-
-    if not user:
-        user = {"name": f"Usuario_{secrets.token_hex(3)}", "email": None}
-
-    await register(conn, user, room, session_id)
-
-    raw_lines = read_last_lines(room, n=100)
-history = []
-for ln in raw_lines:
     try:
-        history.append(json.loads(ln))
-    except:
+        # -----------------------------
+        # 1. Parseo de parámetros
+        # -----------------------------
+        parsed = urlparse(raw)
+        query_params = parse_qs(parsed.query)
+
+        room = query_params.get("room", ["default"])[0]
+        session_id = query_params.get("session_id", [None])[0]
+
+        # -----------------------------
+        # 2. Obtener usuario por session_id
+        # -----------------------------
+        user = None
+        if session_id:
+            sess = load_json(SESSIONS_FILE).get(session_id)
+            if sess:
+                u = sess.get("user", {})
+                user = {
+                    "name": u.get("display_name") or u.get("name"),
+                    "email": u.get("email")
+                }
+
+        # fallback si no existe usuario
+        if not user:
+            user = {"name": f"Usuario_{secrets.token_hex(3)}", "email": None}
+
+        # registrar la conexión en la sala
+        await register(conn, user, room, session_id)
+
+        # -----------------------------
+        # 3. Enviar historial al recién conectado
+        # -----------------------------
+        raw_lines = read_last_lines(room, n=100)
+        history = []
+        for ln in raw_lines:
+            try:
+                history.append(json.loads(ln))
+            except Exception:
+                # línea no JSON → ignorar sin romper nada
+                pass
+
+        try:
+             await conn.send(json.dumps({"type": "history", "lines": raw_lines}, ensure_ascii=False))
+        except Exception:
+            # si falla enviar historial, seguimos
+            pass
+
+        # -----------------------------
+        # 4. Bucle principal → recepción de mensajes
+        # -----------------------------
+        async for raw_msg in conn:
+
+            # intentar parsear JSON del mensaje
+            try:
+                obj = json.loads(raw_msg)
+            except Exception:
+                continue  # ignorar mensajes corruptos
+
+            text = obj.get("text")
+            if not text:
+                continue
+
+            ts = time.time()
+
+            # refrescar usuario desde session_id cada vez
+            sess = load_json(SESSIONS_FILE).get(session_id) if session_id else None
+            if sess:
+                u = sess.get("user", {})
+                user_info = {
+                    "name": u.get("display_name") or u.get("name"),
+                    "email": u.get("email")
+                }
+            else:
+                # fallback
+                user_info = {
+                    "name": user.get("name") or "Anon",
+                    "email": user.get("email")
+                }
+
+            # guardar registro como JSON line
+            line = f"[{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ts))}] {user_info['name']}|{user_info['email']}: {text}"
+            append_message_log(room, line)
+
+            # brodcast a la sala
+            await notify_room(room, {
+                "type": "message",
+                "user": user_info,
+                "text": text,
+                "ts": ts
+            })
+
+    except (ConnectionClosedOK, ConnectionClosedError):
+        # cierre limpio del cliente
         pass
+    except Exception as e:
+        print(f"[WS] Error in handler: {e}")
 
-        await conn.send(json.dumps({
-    "type": "history",
-    "messages": history
-}, ensure_ascii=False))
-
-
-        pass
-
-  try:
-    async for raw in conn:
-        obj = json.loads(raw)
-        text = obj.get("text")
-        if not text:
-            continue
-
-        ts = time.time()
-        sess = load_json(SESSIONS_FILE).get(session_id)
-        if sess:
-            u = sess["user"]
-            user_info = {
-                "name": u.get("display_name") or u.get("name"),
-                "email": u.get("email")
-            }
-        else:
-            user_info = {"name": "Anon", "email": None}
-
-        # Guardar en historial como JSON
-        record = {
-            "ts": ts,
-            "user": user_info,
-            "text": text
-        }
-        append_message_log(room, json.dumps(record, ensure_ascii=False))
-
-        # Enviar mensaje a todos
-        await notify_room(room, {
-            "type": "message",
-            "user": user_info,
-            "text": text,
-            "ts": ts
-        })
-
-except Exception:
-    pass
-
-finally:
-    await unregister(conn)
-
+    finally:
+        # SIEMPRE deregistrar conexión
+        await unregister(conn)
 
 async def run_ws_server():
-    print(f"[WS] Starting WebSocket server on port {WS_PORT}")
-    async with websockets.serve(ws_handler, "0.0.0.0", WS_PORT):
-        await asyncio.Future()
+    print(f"[WS] Starting WebSocket server on {HOST}:{WS_PORT}")
+    async with websockets.serve(ws_handler, HOST, WS_PORT):
+        await asyncio.Future()  # run forever
 
 if __name__ == "__main__":
     t = threading.Thread(target=run_http_server, daemon=True)

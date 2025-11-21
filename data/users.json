@@ -8,7 +8,8 @@
   "106800556049695642381": {
     "sub": "106800556049695642381",
     "email": "santiagovallejos685@gmail.com",
-    "name": "Santiago vallejos"
+    "name": "Santiago vallejos",
+    "display_name": null
   },
   "103314184376230045112": {
     "sub": "103314184376230045112",
@@ -44,6 +45,12 @@
     "sub": "114568831911850925803",
     "email": "gabcuenta154@gmail.com",
     "name": "gabriel mendez",
+    "display_name": null
+  },
+  "111181232580019993780": {
+    "sub": "111181232580019993780",
+    "email": "202300693@est.umss.edu",
+    "name": "ADRIAN VALLEJOS FLORES",
     "display_name": null
   }
 }
