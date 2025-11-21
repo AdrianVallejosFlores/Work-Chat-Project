@@ -23,12 +23,20 @@
   let user = null;
   let ws = null;
 
-  function logLine(text) {
-    const d = document.createElement("div");
-    d.textContent = text;
-    chat.appendChild(d);
-    chat.scrollTop = chat.scrollHeight;
-  }
+  function logLine(text, type = "system") {
+  const wrap = document.createElement("div");
+  wrap.classList.add("msg-line");
+
+  // Tipo de burbuja
+  if (type === "me") wrap.classList.add("msg-me");
+  else if (type === "user") wrap.classList.add("msg-user");
+  else wrap.classList.add("msg-system");
+
+  wrap.innerHTML = text;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
 
   async function fetchSession() {
     try {
@@ -104,10 +112,48 @@
     ws.onmessage = ev => {
       try {
         const obj = JSON.parse(ev.data);
-        if (obj.type === "history") obj.lines.forEach(logLine);
-        else if (obj.type === "join") logLine(`--> ${obj.user.name} se ha unido`);
-        else if (obj.type === "leave") logLine(`--> ${obj.user.name} se ha ido`);
-        else if (obj.type === "message") logLine(`[${new Date(obj.ts*1000).toLocaleTimeString()}] ${obj.user.name}: ${obj.text}`);
+      if (obj.type === "history") {
+  obj.lines.forEach(t => {
+    // Ejemplo de línea: "[2025-11-20 19:03:56] Gabriel: hola"
+
+    const match = t.match(/^\[(.*?)\]\s+(.*?):\s+(.*)$/);
+    if (!match) {
+      logLine(t, "system");
+      return;
+    }
+
+    const [, dateStr, name, text] = match;
+    const ts = new Date(dateStr).getTime() / 1000;
+
+    const isMe = (name === user.name);
+    addDaySeparator(ts);
+
+    logLine(
+      `<strong>${name}</strong>: ${text}
+       <br><span class="msg-time">${new Date(ts * 1000).toLocaleTimeString()}</span>`,
+      isMe ? "me" : "user"
+    );
+  });
+
+  return; // <- importante para no procesar el historial como mensaje normal
+}
+
+else if (obj.type === "join") {
+  logLine(`➡️ ${obj.user.name} se ha unido`, "system");
+}
+else if (obj.type === "leave") {
+  logLine(`⬅️ ${obj.user.name} se ha ido`, "system");
+}
+else if (obj.type === "message") {
+  addDaySeparator(obj.ts);
+  const time = new Date(obj.ts * 1000).toLocaleTimeString();
+  const isMe = (obj.user.email === user.email);
+  
+  logLine(
+    `<strong>${obj.user.name}</strong>: ${obj.text}<br><span class="msg-time">${time}</span>`,
+    isMe ? "me" : "user"
+  );
+}
       } catch (e) {
         console.error("parse msg", e);
       }
@@ -121,6 +167,24 @@
     ws.send(JSON.stringify({ text }));
     msgInput.value = "";
   };
+let lastDay = null;
+
+function addDaySeparator(ts) {
+  const date = new Date(ts * 1000);
+  const dayStr = date.toLocaleDateString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long"
+  });
+
+  if (lastDay === dayStr) return;
+  lastDay = dayStr;
+
+  const sep = document.createElement("div");
+  sep.classList.add("day-separator");
+  sep.textContent = dayStr;
+  chat.appendChild(sep);
+}
 
   connectWS();
 })();
