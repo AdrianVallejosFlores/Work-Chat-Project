@@ -1,71 +1,129 @@
 <!doctype html>
 <html lang="es">
+
 <head>
+  <!-- =========================================================================
+       META Y CONFIGURACIÓN BÁSICA
+       ========================================================================= -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bienvenidos a Work-Chat</title>
+  <title>Work-Chat</title>
 
-  <!-- styles modales primero -->
-   <link rel="stylesheet" href="/static/style.css">
+  <!-- =========================================================================
+       ESTILOS
+       Nota:
+       - Se cargan primero los estilos base (style.css)
+       - Luego el CSS de modales (modal.css)
+       - Finalmente iconos externos (FontAwesome)
+       ========================================================================= -->
+  <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/modal.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
+
 <body>
 
+  <!-- =========================================================================
+       HEADER / BARRA SUPERIOR
+       Muestra:
+       - Estado de sesión
+       - Botón logout
+       - Selector de sala (roomSelect)
+       ========================================================================= -->
   <h1>Bienvenido a Work-Chat</h1>
 
   <div id="topBar">
     <div id="status" class="meta">Cargando sesión...</div>
+
     <button id="btnLogout">Cerrar sesión</button>
+
+    <!-- El select se llenará dinámicamente en client.js -->
     <select id="roomSelect" style="margin-left:auto;">
       <option value="default">General</option>
     </select>
   </div>
 
+  <!-- Mensaje mientras se consulta /session -->
   <div id="loading" class="meta">Comprobando sesión...</div>
 
-  <div id="chatPanel" 
-      style="height:calc(100vh - 120px); display:flex; flex-direction:column; width:97%; max-width:1250px; margin:0 auto;">
+  <!-- =========================================================================
+       PANEL PRINCIPAL DEL CHAT
+       Estructura:
+       - Chat (scroll vertical)
+       - Barra de envío de mensajes
+       ========================================================================= -->
+  <div id="chatPanel"
+       style="
+         height:calc(100vh - 120px);
+         display:flex;
+         flex-direction:column;
+         width:97%; max-width:1250px;
+         margin:0 auto;
+        ">
+
+    <!-- Contenedor general del chat -->
     <div id="chat" style="flex:1; height:100%;"></div>
 
+    <!-- Controles de envío -->
     <div id="controls">
       <input id="msg" placeholder="Escribe un mensaje..." autocomplete="off">
       <button id="send">Enviar</button>
     </div>
   </div>
 
+  <!-- =========================================================================
+       BACKDROP (FONDO OSCURO PARA MODALES)
+       Se activa desde modals.js
+       ========================================================================= -->
   <div id="backdrop"></div>
 
+  <!-- =========================================================================
+       MODAL 1 → LOGIN
+       Se muestra si /session no devuelve sesión válida
+       ========================================================================= -->
   <div id="modalLogin" class="modal" aria-hidden="true" role="dialog">
     <h2>Bienvenido</h2>
     <p>Necesitas iniciar sesión con Google para continuar.</p>
     <button id="btnLoginModal" class="btn-primary">Iniciar con Google</button>
   </div>
 
+  <!-- =========================================================================
+       MODAL 2 → ELEGIR NOMBRE DE USUARIO
+       Se muestra si el usuario está autenticado pero no tiene display_name
+       ========================================================================= -->
   <div id="modalUsername" class="modal" aria-hidden="true" role="dialog">
     <h2>Elige tu nombre de usuario</h2>
+
     <input id="usernameInput" placeholder="Escribe tu nombre...">
+
     <button id="btnUseInput" class="btn-primary">Usar este nombre</button>
     <button id="btnUseEmail" class="btn-secondary">Usar nombre del correo</button>
     <button id="btnUseDefault" class="btn-secondary">Usar nombre por defecto</button>
   </div>
 
+  <!-- =========================================================================
+       SCRIPTS PRINCIPALES
+       Nota:
+       - modals.js se ejecuta primero → controla autenticación visual.
+       - client.js espera window.__AUTH_READY__ para iniciar WebSocket.
+       ========================================================================= -->
   <script src="/static/modals.js?v=3333"></script>
   <script src="/static/client.js?v=5555"></script>
 
-<footer class="simple-footer">
-        <div class="footer-content">
-            <p>
-                <i class="fas fa-envelope"></i> Correo: grupo14@gmail.com
-            </p>
-            <p>
-                <i class="fas fa-phone"></i> Teléfono: 77777777
-            </p>
-            <div class="social-links">
-                <a href="#" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
-                <a href="#" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
-            </div>
-        </div>
-    </footer>
-    </body>
+  <!-- =========================================================================
+       FOOTER
+       ========================================================================= -->
+  <footer class="simple-footer">
+    <div class="footer-content">
+      <p><i class="fas fa-envelope"></i> Correo: grupo14@gmail.com</p>
+      <p><i class="fas fa-phone"></i> Teléfono: 77777777</p>
+
+      <div class="social-links">
+        <a href="#" target="_blank" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+        <a href="#" target="_blank" title="GitHub"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+  </footer>
+
+</body>
 </html>

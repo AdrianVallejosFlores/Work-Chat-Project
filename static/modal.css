@@ -1,77 +1,148 @@
-/* Backdrop (oscurece y desenfoca el fondo) */
+/* ============================================================================
+   MODAL.CSS — Estilos de Modales y Backdrop
+   ----------------------------------------------------------------------------
+   Este archivo define exclusivamente:
+
+   ✔ Backdrop (oscurece y desenfoca fondo)
+   ✔ Estilos de ventanas modales (login + username)
+   ✔ Animaciones de aparición
+   ✔ Botones primarios / secundarios en modales
+
+   NOTA:
+   - Todos los estilos generales del chat están en style.css.
+   - Este archivo solo controla UI de ventanas emergentes.
+   =========================================================================== */
+
+
+/* ============================================================================
+   1) BACKDROP (FONDO OSCURECIDO)
+   =========================================================================== */
+
 #backdrop {
-  position: fixed;
-  inset: 0;
-  backdrop-filter: blur(4px);
-  background: rgba(0,0,0,0.65);
-  z-index: 1000;
-  display: none;
+    position: fixed;
+    inset: 0;
+
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+
+    display: none;
+    z-index: 1000;
+
+    transition: opacity 0.25s ease;
 }
 
-/* Caja modal centrada */
+
+/* ============================================================================
+   2) MODAL GENÉRICO
+   =========================================================================== */
+
 .modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 1.25rem;
-  width: 360px;
-  max-width: 92%;
-  background: linear-gradient(180deg, #0b0b0b, #111);
-  color: #eef;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  z-index: 1001;
-  display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: 360px;
+    max-width: 90%;
+
+    background: linear-gradient(180deg, #0b0b0b, #111);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+
+    padding: 1.25rem;
+    color: #eef;
+
+    display: none;
+    z-index: 1001;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+
+    animation: modalFade 0.2s ease-out;
+    text-align: center;
+}
+
+/* Animación de entrada */
+@keyframes modalFade {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -48%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
 }
 
 .modal h2 {
-  margin: 0 0 .5rem 0;
-  font-size: 1.25rem;
-  color: #fff;
+    margin-top: 0;
+    font-size: 1.25rem;
+    color: #fff;
 }
 
 .modal p {
-  margin: 0 0 1rem 0;
-  color: #cfcfcf;
+    margin: 0.5rem 0 1rem;
+    color: #ccd;
 }
 
-.modal input {
-  width: 100%;
-  padding: .6rem;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: #060606;
-  color: #fff;
-  margin-bottom: .5rem;
+
+/* ============================================================================
+   3) INPUTS EN EL MODAL
+   =========================================================================== */
+
+#usernameInput {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+
+    border-radius: 6px;
+    border: 1px solid #333;
+
+    background: #1a1a1a;
+    color: #eee;
+
+    margin-bottom: 1rem;
+    outline: none;
 }
 
-.modal button {
-  width: 100%;
-  padding: .6rem;
-  margin-top: .45rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
+#usernameInput:focus {
+    border-color: #0099ff;
+    box-shadow: 0 0 8px rgba(0,153,255,0.4);
 }
 
-.btn-primary {
-  background: #4a9eff;
-  color: #032;
-}
 
-.btn-primary:hover {
-  background: #1e7cff;
-}
+/* ============================================================================
+   4) BOTONES EN MODALES
+   =========================================================================== */
 
+.btn-primary,
 .btn-secondary {
-  background: #222;
-  color: #fff;
-  border: 1px solid #444;
+    width: 100%;
+    padding: 0.65rem;
+    margin-top: 0.5rem;
+
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Botón principal (azul) */
+.btn-primary {
+    background: linear-gradient(135deg, #0066ff, #00ccff);
+    color: #fff;
+}
+
+/* Botón alternativo (gris) */
+.btn-secondary {
+    background: #252525;
+    color: #ddd;
 }
 
 .btn-secondary:hover {
-  background: #333;
+    background: #303030;
+}
+
+.btn-primary:hover {
+    opacity: 0.9;
 }

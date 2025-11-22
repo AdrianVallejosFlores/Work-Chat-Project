@@ -1,144 +1,255 @@
+/* ============================================================================
+   STYLE.CSS — Estilos principales de Work-Chat
+   ----------------------------------------------------------------------------
+   Este archivo define:
+
+   ✔ Estilos base del layout y colores
+   ✔ Panel y área de chat
+   ✔ Controles de envío de mensajes
+   ✔ Burbujas de mensaje (me / user / system)
+   ✔ Separadores por día
+   ✔ Top bar y elementos auxiliares
+   ✔ Footer fijo
+
+   Nota:
+   - Los estilos de MODALES están en modal.css.
+   =========================================================================== */
+
+
+/* ============================================================================
+   1) ESTILOS BASE DE LA PÁGINA
+   =========================================================================== */
+
 body {
-      font-family: system-ui, sans-serif;
-      max-width: 900px;
-      margin: 2rem auto;
-      padding: 0 1rem;
-      background: #0d0d0d;
-      color: #e8e8e8;
-      padding-bottom: 110px;
-    }
-    h1 { text-align:center; color:#fff; text-shadow:0 0 10px #0099ff; }
+    font-family: system-ui, sans-serif;
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    padding-bottom: 110px; /* espacio para footer fijo */
 
-    #chatPanel { transition: opacity 0.25s ease; }
-    #chatPanel.blurred { opacity: 0.12; pointer-events: none; }
+    background: #0d0d0d;
+    color: #e8e8e8;
+}
 
-/* style.css */
+h1 {
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 0 10px #0099ff;
+}
+
+/* Transición cuando está desenfocado por un modal */
+#chatPanel {
+    transition: opacity 0.25s ease;
+}
+#chatPanel.blurred {
+    opacity: 0.12;
+    pointer-events: none;
+}
+
+
+/* ============================================================================
+   2) PANEL DEL CHAT (contenedor)
+   =========================================================================== */
+
 #chat {
     background: #111;
     border: 1px solid #222;
     border-radius: 8px;
     padding: 1rem;
-    
-    min-height: 200px;
-    flex-grow: 1; 
 
+    min-height: 200px;
+    flex-grow: 1;
     overflow-y: auto;
+
     box-shadow: 0 0 10px rgba(0,153,255,0.15);
 }
-    #controls { margin-top: 1rem; display:flex; gap:.5rem; }
-    #msg { flex:1; padding:.7rem; border-radius:6px; border:1px solid #333; background:#1a1a1a; color:#eee; }
-    #send { padding:.7rem 1.2rem; border-radius:6px; border:none; cursor:pointer; background:linear-gradient(135deg,#0066ff,#00ccff); color:#fff; font-weight:600; }
-    #topBar{ display:flex; gap:1rem; align-items:center; margin-bottom:1rem; }
 
-    
-    #btnLogout { background:#ff4444; color:#fff; padding:.5rem 1rem; border-radius:6px; border:none; cursor:pointer; display:none; }
 
-    .meta { color:#aaa; font-size:.9rem; }
+/* ============================================================================
+   3) CONTROLES DE MENSAJE (input + botón)
+   =========================================================================== */
 
-   /* BURBUJAS DE MENSAJE */
+#controls {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+#msg {
+    flex: 1;
+    padding: 0.7rem;
+
+    border-radius: 6px;
+    border: 1px solid #333;
+
+    background: #1a1a1a;
+    color: #eee;
+}
+
+#send {
+    padding: 0.7rem 1.2rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+
+    background: linear-gradient(135deg, #0066ff, #00ccff);
+    color: #fff;
+    font-weight: 600;
+}
+
+
+/* ============================================================================
+   4) TOP BAR (estado + logout + selector sala)
+   =========================================================================== */
+
+#topBar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#btnLogout {
+    background: #ff4444;
+    color: #fff;
+
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+
+    display: none; /* Se muestra solo si hay sesión */
+}
+
+.meta {
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+
+/* ============================================================================
+   5) BURBUJAS DE MENSAJE
+   =========================================================================== */
 
 .msg-line {
-  padding: .75rem 1rem;
-  margin: .45rem 0;
-  max-width: 78%;
-  border-radius: 16px;
-  line-height: 1.45rem;
-  word-wrap: break-word;
-  font-size: .95rem;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    padding: 0.75rem 1rem;
+    margin: 0.45rem 0;
 
-  /* Animación suave */
-  animation: fadeIn .18s ease;
+    max-width: 78%;
+    border-radius: 16px;
+    line-height: 1.45rem;
+    font-size: 0.95rem;
+
+    font-family: "Segoe UI", system-ui, sans-serif;
+    word-wrap: break-word;
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+
+    /* Animación suave de entrada */
+    animation: fadeIn 0.18s ease;
 }
 
-/* ANIMACIÓN */
+/* Animación para entrada de mensajes */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
-/* MENSAJES DE OTROS USUARIOS */
+
+/* —— Mensajes de otros usuarios —— */
 .msg-user {
-  background: #1b1b1d;
-  border: 1px solid #2a2a2c;
-  color: #e6e6e6;
-  border-bottom-left-radius: 4px;
+    background: #1b1b1d;
+    border: 1px solid #2a2a2c;
+    color: #e6e6e6;
+    border-bottom-left-radius: 4px;
 }
 
-/* MENSAJES PROPIOS */
+/* —— Tus propios mensajes —— */
 .msg-me {
-  margin-left: auto;
-  background: linear-gradient(135deg, #4481cb, #2e9cba);
-  color: #fff;
-  text-align: right;
-  border-bottom-right-radius: 4px;
-  box-shadow: 0 0 10px rgba(0,135,255,0.35);
+    margin-left: auto;
+    background: linear-gradient(135deg, #4481cb, #2e9cba);
+    color: #fff;
+    text-align: right;
+
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 0 10px rgba(0,135,255,0.35);
 }
 
-/* SISTEMA */
+/* —— Mensajes del sistema (join/leave, info) —— */
 .msg-system {
-  background: #141414;
-  border-left: 4px solid #4da3ff;
-  color: #aab4c5;
-  font-size: .85rem;
+    background: #141414;
+    border-left: 4px solid #4da3ff;
+    color: #aab4c5;
+    font-size: 0.85rem;
 }
 
-/* NOMBRE DEL USUARIO */
+
+/* —— Nombre del usuario —— */
 .msg-line strong {
-  font-weight: 600;
-  color: #cde2ff;
+    font-weight: 600;
+    color: #cde2ff;
 }
 
-/* EN TUS MENSAJES NOMBRE MÁS DISCRETO */
+/* En tus mensajes: nombre un poco más discreto */
 .msg-me strong {
-  color: #ffffff;
-  opacity: 0.9;
+    color: #ffffff;
+    opacity: 0.9;
 }
 
-/* HORA */
+
+/* —— Hora del mensaje —— */
 .msg-time {
-  font-size: .70rem;
-  opacity: .75;
-  margin-top: .25rem;
-  display: block;
+    font-size: 0.70rem;
+    opacity: 0.75;
+    margin-top: 0.25rem;
+    display: block;
 }
 
-/* SEPARACIÓN DE DÍAS */
+
+/* ============================================================================
+   6) SEPARADORES DE DÍAS
+   =========================================================================== */
+
 .day-separator {
-  text-align: center;
-  margin: 1.8rem 0 1rem;
-  position: relative;
-  color: #aaa;
-  font-size: .82rem;
-  text-transform: capitalize;
+    text-align: center;
+    margin: 1.8rem 0 1rem;
+
+    position: relative;
+    color: #aaa;
+    font-size: 0.82rem;
+    text-transform: capitalize;
 }
 
 .day-separator::before,
 .day-separator::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 42%;
-  height: 1px;
-  background: #2c2c2c;
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 42%;
+    height: 1px;
+    background: #2c2c2c;
 }
 
 .day-separator::before { left: 0; }
 .day-separator::after  { right: 0; }
 
 
-/* --- ESTILO FOOTER --- */
+/* ============================================================================
+   7) FOOTER FIJO
+   =========================================================================== */
+
 .simple-footer {
-    position: fixed; /* Lo hace fijo */
-    bottom: 0;       /* Lo ancla al fondo */
+    position: fixed;
+    bottom: 0;
     left: 0;
     width: 100%;
-    
+
     background-color: #333;
     color: #fff;
+
     text-align: center;
-    padding: 10px 0; 
+    padding: 10px 0;
+
     z-index: 1000;
 }
 
@@ -147,6 +258,7 @@ body {
     justify-content: center;
     gap: 20px;
     padding: 0 1rem;
+
     font-size: 0.9rem;
 }
 
