@@ -15,7 +15,7 @@ El servidor maneja:
 
 ---
 
-## 🗂 Estructura del Proyecto
+# Estructura del Proyecto
 
 ```txt
 Work-Chat-Project
@@ -35,7 +35,7 @@ Work-Chat-Project
     └── client.js      → Lógica WebSocket del cliente
 ```
 
-## 🧪 Requisitos
+# Requisitos
 
 Instalar dependencias:
 
