@@ -86,21 +86,29 @@
 /* ============================================================================
    3) INPUTS EN EL MODAL
    =========================================================================== */
-#usernameInput {
-    width: 100%;
-    padding: 0.6rem 0.8rem;
+#modalUsername input {
+    width: 90%;
+    max-width: 400px;
+    padding: 12px 14px;
 
-    border-radius: 6px;
-    border: 1px solid #333;
+    border: 1px solid #444;
+    border-radius: 8px;
 
-    background: #1a1a1a;
-    color: #eee;
+    background: #111;
+    color: white;
+    font-size: 16px;
 
-    margin-bottom: 1rem;
     outline: none;
+    display: block;
+    margin: 1rem auto 1.5rem auto; /* ⬅ FIX: lo baja un poco para que no quede pegado */
+    box-sizing: border-box;
 }
 
-#usernameInput:focus {
+#modalUsername input::placeholder {
+    color: #888;
+}
+
+#modalUsername input:focus {
     border-color: #0099ff;
     box-shadow: 0 0 8px rgba(0,153,255,0.4);
 }
