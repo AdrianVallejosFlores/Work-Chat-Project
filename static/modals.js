@@ -72,13 +72,6 @@
   // ==========================================================================
   // 3) OBTENER SESIÓN ACTUAL
   // ==========================================================================
-
-  /**
-   * Llama a /session para verificar autenticación.
-   * Retorna:
-   *   - null si no hay sesión
-   *   - { session_id, user: {...} } si hay sesión válida
-   */
   async function fetchSession() {
     try {
       const r = await fetch("/session", { cache: "no-store" });

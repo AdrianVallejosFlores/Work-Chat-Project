@@ -36,9 +36,7 @@ from dotenv import load_dotenv
 # Cargar variables del .env
 load_dotenv()
 
-# -----------------------------------------------------------------------------
 # Configuración del cliente OAuth2
-# -----------------------------------------------------------------------------
 CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "https://developers.google.com/oauthplayground")
@@ -52,24 +50,8 @@ TOKEN_URL = "https://oauth2.googleapis.com/token"
 USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
-# -----------------------------------------------------------------------------
 # Funciones principales del flujo OAuth2
-# -----------------------------------------------------------------------------
 def build_auth_url(state: str) -> str:
-    """
-    Construye y devuelve la URL de autorización de Google.
-
-    Parámetros:
-        state (str): Valor generado aleatoriamente para proteger contra CSRF.
-
-    Retorna:
-        str: URL completa a la que el usuario debe ser redirigido.
-
-    Notas:
-        - Se usa response_type="code" para el flujo "Authorization Code".
-        - access_type="offline" → Google puede devolver refresh_token
-          (solo en la primera autorización del usuario).
-    """
     params = {
         "client_id": CLIENT_ID,
         "redirect_uri": REDIRECT_URI,
@@ -78,41 +60,12 @@ def build_auth_url(state: str) -> str:
         "access_type": "offline",
         "include_granted_scopes": "true",
         "state": state,
-        "prompt": "select_account",  # fuerza selector de cuentas
+        "prompt": "select_account",
     }
     return f"{AUTH_BASE}?{urlencode(params)}"
 
 
 def exchange_code_for_user(code: str) -> dict:
-    """
-    Intercambia el código de autorización por un access_token
-    y solicita los datos del usuario a Google.
-
-    Parámetros:
-        code (str): Código devuelto por Google tras el login.
-
-    Retorna:
-        dict: Objeto JSON con la información del usuario, típicamente:
-              {
-                  "sub": "...",
-                  "email": "...",
-                  "email_verified": true,
-                  "name": "...",
-                  "picture": "...",
-                  ...
-              }
-
-    Excepciones:
-        - Si Google no devuelve access_token, lanza Exception.
-        - Si la petición falla, requests.raise_for_status() lanza HTTPError.
-
-    Flujo:
-        1. POST → TOKEN_URL con client_id, client_secret, code.
-        2. Recibe tokens.
-        3. GET → USERINFO_URL con Authorization: Bearer access_token.
-        4. Devuelve los datos de usuario.
-    """
-    # --- 1. Intercambiar código por tokens ---
     data = {
         "code": code,
         "client_id": CLIENT_ID,
@@ -129,7 +82,6 @@ def exchange_code_for_user(code: str) -> dict:
     if not access_token:
         raise Exception("No access token received from Google during OAuth exchange.")
 
-    # --- 2. Solicitar datos del usuario ---
     headers = {"Authorization": f"Bearer {access_token}"}
     r2 = requests.get(USERINFO_URL, headers=headers, timeout=10)
     r2.raise_for_status()

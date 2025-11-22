@@ -43,9 +43,7 @@ from oauth import build_auth_url, exchange_code_for_user
 # Carga de variables de entorno desde .env
 load_dotenv()
 
-# -----------------------------------------------------------------------------
 # Configuración básica y rutas de archivos
-# -----------------------------------------------------------------------------
 HOST = os.environ.get("HOST", "0.0.0.0")
 HTTP_PORT = int(os.environ.get("HTTP_PORT", 8000))
 WS_PORT = int(os.environ.get("WS_PORT", 8765))
@@ -73,17 +71,8 @@ for fpath, default in initial_files:
 # LOCK global para acceso concurrente a archivos
 LOCK = threading.Lock()
 
-
-# -----------------------------------------------------------------------------
 # Utilidades de acceso a archivos JSON / logs
-# -----------------------------------------------------------------------------
 def load_json(path: Path) -> Dict[str, Any]:
-    """
-    Carga un archivo JSON de disco de forma segura.
-
-    - Si el archivo no existe o está vacío, devuelve {}.
-    - Si hay un error de parseo, también devuelve {} (fallo silencioso).
-    """
     with LOCK:
         if not path.exists():
             return {}
@@ -98,19 +87,11 @@ def load_json(path: Path) -> Dict[str, Any]:
 
 
 def save_json(path: Path, data: Dict[str, Any]) -> None:
-    """
-    Guarda un diccionario como JSON en disco con indentación legible.
-    """
     with LOCK:
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def append_message_log(room: str, line: str) -> None:
-    """
-    Agrega una línea de texto al log de mensajes de una sala.
-
-    El formato actual es texto plano con prefijo de timestamp y usuario.
-    """
     path = MESSAGES_DIR / f"{room}.log"
     with LOCK:
         with open(path, "a", encoding="utf-8") as fh:
@@ -118,11 +99,6 @@ def append_message_log(room: str, line: str) -> None:
 
 
 def read_last_lines(room: str, n: int = 50) -> list[str]:
-    """
-    Devuelve las últimas `n` líneas del log de una sala.
-
-    Si el archivo no existe, devuelve una lista vacía.
-    """
     path = MESSAGES_DIR / f"{room}.log"
     if not path.exists():
         return []
@@ -131,18 +107,8 @@ def read_last_lines(room: str, n: int = 50) -> list[str]:
             lines = fh.read().splitlines()
     return lines[-n:]
 
-
-# -----------------------------------------------------------------------------
 # Sesiones y usuarios
-# -----------------------------------------------------------------------------
 def create_session(userinfo: dict) -> str:
-    """
-    Crea una nueva sesión a partir del `userinfo` que viene de OAuth.
-
-    - Genera un session_id aleatorio.
-    - Guarda el usuario en sessions.json (clave: session_id).
-    - Guarda/actualiza el usuario en users.json (clave: sub o email).
-    """
     sessions = load_json(SESSIONS_FILE)
     session_id = secrets.token_urlsafe(16)
 
@@ -174,21 +140,11 @@ def create_session(userinfo: dict) -> str:
 
 
 def get_session(session_id: str) -> Optional[dict]:
-    """
-    Devuelve la sesión asociada a `session_id` o None si no existe.
-    """
     sessions = load_json(SESSIONS_FILE)
     return sessions.get(session_id)
 
 
 def extract_session_id_from_cookie(cookie_header: str) -> Optional[str]:
-    """
-    Extrae el valor de la cookie 'session' a partir de un header Cookie.
-
-    Devuelve:
-        - str con el session_id si está presente.
-        - None si no se encuentra.
-    """
     cookies = cookie_header or ""
     session_id = None
     for part in cookies.split(";"):
@@ -199,29 +155,9 @@ def extract_session_id_from_cookie(cookie_header: str) -> Optional[str]:
                 break
     return session_id
 
-
-# -----------------------------------------------------------------------------
 # Handler HTTP (estático + endpoints de autenticación y sesión)
-# -----------------------------------------------------------------------------
 class Handler(SimpleHTTPRequestHandler):
-    """
-    Handler HTTP que:
-      - Sirve la SPA desde /static (index.html en la raíz "/").
-      - Implementa endpoints:
-            * /login
-            * /oauth2callback
-            * /session
-            * /logout
-            * /setname (POST)
-    """
-
     def translate_path(self, path: str) -> str:
-        """
-        Redefine la resolución de rutas para servir:
-          - "/" => static/index.html
-          - "/static/..." => archivos dentro de la carpeta static
-        El resto se delega al comportamiento por defecto.
-        """
         p = urlparse(path).path
         root = Path.cwd()
 
@@ -234,21 +170,9 @@ class Handler(SimpleHTTPRequestHandler):
         return super().translate_path(path)
 
     def do_GET(self) -> None:
-        """
-        Maneja las peticiones GET.
-
-        Endpoints especiales:
-        - /login
-        - /oauth2callback
-        - /session
-        - /logout
-
-        Si no coincide con ninguno, se delega a la lógica estática de SimpleHTTPRequestHandler.
-        """
         parsed = urlparse(self.path)
         path = parsed.path
-
-        # --- Inicia flujo OAuth con Google ---
+        
         if path == "/login":
             state = secrets.token_urlsafe(8)
             url = build_auth_url(state)
@@ -270,7 +194,6 @@ class Handler(SimpleHTTPRequestHandler):
             try:
                 userinfo = exchange_code_for_user(code)
             except Exception as e:
-                # En un sistema real, se debería loguear el error
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(f"OAuth error: {e}".encode())
@@ -333,12 +256,6 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self) -> None:
-        """
-        Maneja peticiones POST.
-
-        Endpoint actual:
-        - /setname: actualiza el display_name del usuario en la sesión.
-        """
         parsed = urlparse(self.path)
         path = parsed.path
 
@@ -392,20 +309,12 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def run_http_server() -> None:
-    """
-    Arranca el servidor HTTP síncrono usando el Handler anterior.
-
-    Se ejecuta en un hilo separado para no bloquear el loop de asyncio
-    donde corre el servidor WebSocket.
-    """
     server = HTTPServer((HOST, HTTP_PORT), Handler)
     print(f"[HTTP] Serving HTTP on {HOST}:{HTTP_PORT} (visit http://localhost:{HTTP_PORT})")
     server.serve_forever()
 
 
-# -----------------------------------------------------------------------------
-# Estado global del servidor WebSocket
-# -----------------------------------------------------------------------------
+
 # ROOMS: room_id -> set de conexiones WebSocket
 ROOMS: Dict[str, Set] = {}
 
@@ -414,12 +323,6 @@ WS_USERS: Dict[object, Dict[str, Any]] = {}
 
 
 async def notify_room(room: str, message: dict) -> None:
-    """
-    Envía un mensaje (dict) en formato JSON a todos los clientes conectados
-    a la sala indicada.
-
-    Maneja desconexiones silenciosamente, removiendo conexiones muertas.
-    """
     conns = set(ROOMS.get(room, set()))
     if not conns:
         return
@@ -443,13 +346,6 @@ async def notify_room(room: str, message: dict) -> None:
 
 
 async def register(ws, user: dict, room: str, session_id: Optional[str]) -> None:
-    """
-    Registra una nueva conexión WebSocket en la sala dada.
-
-    - Asocia el websocket a un usuario y una sala en WS_USERS.
-    - Añade el websocket al set de la sala en ROOMS.
-    - Notifica al resto de la sala que alguien se ha unido.
-    """
     session_id = None if session_id is None else str(session_id)
 
     # Útil para debug; se puede silenciar en producción
@@ -462,10 +358,6 @@ async def register(ws, user: dict, room: str, session_id: Optional[str]) -> None
 
 
 async def unregister(ws) -> None:
-    """
-    Elimina una conexión WebSocket de las estructuras internas (ROOMS, WS_USERS)
-    y notifica un evento de 'leave' a la sala correspondiente.
-    """
     info = WS_USERS.get(ws)
     if not info:
         return
@@ -478,40 +370,23 @@ async def unregister(ws) -> None:
 
     await notify_room(room, {"type": "leave", "user": user, "ts": time.time()})
 
-
-# -----------------------------------------------------------------------------
 # Handler principal de WebSocket
-# -----------------------------------------------------------------------------
 async def ws_handler(conn):
-    """
-    Maneja una conexión WebSocket de ciclo completo:
-
-    Flujo:
-    1. Parsear parámetros de la URL (room, session_id).
-    2. Resolver el usuario a partir de session_id (si existe).
-    3. Registrar la conexión en ROOMS/WS_USERS.
-    4. Enviar historial reciente de mensajes al cliente.
-    5. Entrar en un bucle async para recibir mensajes y hacer broadcast.
-    6. Al finalizar (por error o cierre), desregistrar la conexión.
-    """
     # Algunos servidores/implementaciones ponen la ruta en conn.request.path
     raw = getattr(conn.request, "path", None)
     if raw is None:
         raw = "/"
 
     try:
-        # -----------------------------
+       
         # 1. Parseo de parámetros
-        # -----------------------------
         parsed = urlparse(raw)
         query_params = parse_qs(parsed.query)
 
         room = query_params.get("room", ["default"])[0]
         session_id = query_params.get("session_id", [None])[0]
 
-        # -----------------------------
         # 2. Obtener usuario por session_id
-        # -----------------------------
         user = None
         if session_id:
             sess = load_json(SESSIONS_FILE).get(session_id)
@@ -529,9 +404,7 @@ async def ws_handler(conn):
         # Registrar la conexión en la sala
         await register(conn, user, room, session_id)
 
-        # -----------------------------
         # 3. Enviar historial al recién conectado
-        # -----------------------------
         raw_lines = read_last_lines(room, n=100)
         history = []
         for ln in raw_lines:
@@ -549,9 +422,7 @@ async def ws_handler(conn):
             # Si falla enviar historial, no se cierra la conexión, solo se continúa.
             pass
 
-        # -----------------------------
         # 4. Bucle principal → recepción de mensajes
-        # -----------------------------
         async for raw_msg in conn:
             # Intentar parsear JSON del mensaje
             try:
@@ -621,9 +492,7 @@ async def run_ws_server() -> None:
         await asyncio.Future()
 
 
-# -----------------------------------------------------------------------------
 # Punto de entrada principal
-# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     # Levantamos servidor HTTP en un hilo separado
     t = threading.Thread(target=run_http_server, daemon=True)

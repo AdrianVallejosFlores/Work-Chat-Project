@@ -54,12 +54,6 @@
   // ==========================================================================
   // 4) Helpers UI
   // ==========================================================================
-
-  /**
-   * Añade una línea al chat con estilo
-   * @param {string} text  - Texto HTML a insertar
-   * @param {"system"|"me"|"user"} type
-   */
   function logLine(text, type = "system") {
     const wrap = document.createElement("div");
     wrap.classList.add("msg-line");
