@@ -77,11 +77,12 @@ pip install -r requirements.txt
 
 ```
 
-# ▶️ Ejecución
+# ▶️ Ejecución en local
 
-Simplemente ejecutar:
+Simplemente ejecutar el comando especificacdo y entrar a la ruta local: http://localhost:8000
 
 ```bash
 python server.py
+
 
 
